@@ -1,66 +1,139 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Project with Authentication & Chatbot
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 🚀 Project Overview
+This Laravel project includes:
+- **User Authentication** (Login, Register, Forgot Password, Email Verification)
+- **Social Login** (Google)
+- **Dashboard with AI Chatbot** (Fetching responses from the database)
 
-## About Laravel
+## 🛠️ Installation Guide
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/your-username/your-repo.git
+cd your-repo
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 2️⃣ Install Dependencies
+```bash
+composer install
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 3️⃣ Configure Environment
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+Update your `.env` file with database credentials and API keys.
 
-## Learning Laravel
+### 4️⃣ Run Migrations & Seeders
+```bash
+php artisan migrate --seed
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 5️⃣ Start the Server
+```bash
+php artisan serve
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
+## 🔐 Authentication Features
+- **User Registration & Login** (custom authentication)
+- **Forgot & Reset Password** (via Email)
+- **Social Login** (Google)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Enable Social Login
+1. Install Laravel Socialite:
+   ```bash
+   composer require laravel/socialite
+   ```
+2. Configure `.env` with API credentials:
+   ```env
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   GOOGLE_REDIRECT_URL=http://127.0.0.1:8000/auth/google/callback
+   ```
+3. Update `config/services.php`:
+   ```php
+   'google' => [
+       'client_id' => env('GOOGLE_CLIENT_ID'),
+       'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+       'redirect' => env('GOOGLE_REDIRECT_URL'),
+   ],
+   ```
 
-## Laravel Sponsors
+---
+## 🤖 Chatbot (Fetching from Database)
+### **1️⃣ Create Chatbot Responses Table**
+```bash
+php artisan make:migration create_chatbot_responses_table
+```
+Modify migration file:
+```php
+Schema::create('chatbot_responses', function (Blueprint $table) {
+    $table->id();
+    $table->string('question');
+    $table->text('response');
+    $table->timestamps();
+});
+```
+Run migrations:
+```bash
+php artisan migrate
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### **2️⃣ Insert Sample Data**
+```bash
+php artisan tinker
+use App\Models\ChatbotResponse;
+ChatbotResponse::create(['question' => 'hi', 'response' => 'Hello! How can I help you?']);
+exit;
+```
 
-### Premium Partners
+### **3️⃣ Chatbot Controller**
+Create a controller:
+```bash
+php artisan make:controller ChatbotController
+```
+Modify `ChatbotController.php`:
+```php
+public function getResponse(Request $request)
+{
+    $question = strtolower(trim($request->message));
+    $response = ChatbotResponse::where('question', 'LIKE', "%{$question}%")->first();
+    return response()->json(['message' => $response ? $response->response : "I don't understand that."]);
+}
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+### **4️⃣ Define Route**
+```php
+Route::post('/chatbot', [ChatbotController::class, 'getResponse'])->name('chatbot.response');
+```
 
-## Contributing
+### **5️⃣ Add Chatbot to Dashboard**
+```html
+<input type="text" id="userMessage" placeholder="Type your message...">
+<button onclick="sendMessage()">Send</button>
+<div id="chatbox"></div>
+<script>
+function sendMessage() {
+    var message = document.getElementById("userMessage").value;
+    fetch("{{ route('chatbot.response') }}", {
+        method: "POST",
+        headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}'},
+        body: JSON.stringify({message: message})
+    })
+    .then(response => response.json())
+    .then(data => document.getElementById("chatbox").innerHTML += `<p>Bot: ${data.message}</p>`);
+}
+</script>
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
+## 📜 License
+This project is licensed under the MIT License.
 
-## Code of Conduct
+---
+## 📧 Contact
+For any queries, contact: `dy1883078@gmail.com`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
